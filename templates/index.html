@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo Filter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #09090b;
+    --surface: #18181b;
+    --surface2: #1f1f23;
+    --surface3: #27272a;
+    --border: #2e2e33;
+    --border-strong: #3f3f46;
+    --text: #fafafa;
+    --text-dim: #a1a1aa;
+    --text-faint: #71717a;
+    --accent: #10b981;
+    --accent-glow: rgba(16, 185, 129, 0.12);
+    --accent-hover: #34d399;
+    --blue: #60a5fa;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --radius: 6px;
+    --radius-lg: 8px;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', Consolas, monospace;
+    --thumb: 200px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv11', 'ss01';
+    min-height: 100vh;
+    user-select: none;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+  /* Landing */
+  .landing {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 20px;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 0%, rgba(16,185,129,0.06), transparent),
+      radial-gradient(ellipse 40% 40% at 80% 100%, rgba(96,165,250,0.04), transparent),
+      var(--bg);
+  }
+
+  .landing-card {
+    width: 100%; max-width: 520px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 40px 36px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: cardIn 0.3s ease-out;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .landing-brand {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+    opacity: 0.7;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .landing h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+
+  .landing-sub {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+
+  .btn-choose {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 28px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: var(--font-sans);
+  }
+  .btn-choose:hover:not(:disabled) { background: var(--accent-hover); }
+  .btn-choose:active:not(:disabled) { transform: scale(0.98); }
+  .btn-choose:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-choose svg { width: 18px; height: 18px; }
+
+  .landing-feature-list {
+    text-align: left;
+    margin: 0 auto 28px;
+    max-width: 360px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .feature-item {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--text-dim);
+  }
+  .feature-bullet {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  .landing-error {
+    margin-top: 16px;
+    padding: 10px 14px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius);
+    color: var(--red);
+    font-size: 12px;
+    font-family: var(--font-mono);
+  }
+
+  .landing-hint {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-faint);
+    line-height: 1.7;
+  }
+  .landing-hint code {
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+  }
+
+  /* Gallery */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .topbar .brand {
+    font-family: var(--font-mono);
+    font-size: 12px; font-weight: 500; color: var(--accent);
+    letter-spacing: 0.05em; white-space: nowrap;
+  }
+  .topbar .folder-name {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--text-faint);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 8px;
+    max-width: 280px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .topbar .stat {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--text-faint);
+  }
+  .topbar .spacer { flex: 1; }
+
+  .filter-group {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 12px;
+    font-size: 12px; color: var(--text-faint);
+  }
+  .filter-group label {
+    font-family: var(--font-mono);
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .filter-group input[type="range"] { width: 80px; accent-color: var(--accent); }
+  .filter-group input[type="number"] {
+    width: 56px; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font-mono);
+    font-size: 12px; padding: 2px 6px; border-radius: 3px;
+    outline: none;
+  }
+  .filter-group input[type="number"]:focus { border-color: var(--accent); }
+  .filter-group .val {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--accent); min-width: 28px;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font-mono);
+    font-size: 11px; padding: 6px 14px; border-radius: var(--radius);
+    cursor: pointer; transition: all 0.12s;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .btn:hover { background: var(--surface3); border-color: var(--border-strong); }
+  .btn.active {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn.danger {
+    background: rgba(239,68,68,0.08);
+    border-color: rgba(239,68,68,0.25);
+    color: var(--red);
+    opacity: 0.4; pointer-events: none;
+  }
+  .btn.danger.visible { opacity: 1; pointer-events: auto; }
+  .btn.danger:hover {
+    background: var(--red);
+    color: #fff;
+    border-color: var(--red);
+  }
+
+  .grid {
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 36px;
+  }
+
+  .group { display: flex; flex-direction: column; gap: 4px; }
+  .group-header {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--text-faint);
+    padding: 0 4px 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .group-header .gname {
+    color: var(--text); font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .group-header .gcount {
+    color: var(--text-faint);
+    font-size: 10px;
+  }
+  .group-header .gline {
+    flex: 1; height: 1px; background: var(--border);
+  }
+  .group-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--thumb), 300px));
+    gap: 10px;
+  }
+
+  .card {
+    position: relative;
+    background: var(--surface);
+    border: 2px solid transparent;
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.12s, transform 0.1s;
+    contain: layout style paint;
+  }
+  .card:hover { transform: translateY(-1px); }
+  .card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-glow);
+  }
+  .card.hidden { display: none; }
+
+  .card img {
+    display: block; width: 100%; aspect-ratio: 16/10;
+    object-fit: cover; background: var(--surface2);
+  }
+  .card .info {
+    padding: 6px 8px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .card .vid {
+    font-size: 10px; color: var(--text-faint);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 120px;
+  }
+  .card .score {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 600;
+    padding: 1px 6px; border-radius: 3px;
+  }
+  .score-high { color: var(--accent); background: rgba(16,185,129,0.12); }
+  .score-mid { color: var(--amber); background: rgba(245,158,11,0.12); }
+  .score-low { color: var(--text-faint); background: var(--surface2); }
+
+  .card .res {
+    font-family: var(--font-mono);
+    font-size: 9px; color: var(--text-dim);
+    position: absolute; bottom: 28px; right: 4px;
+    background: rgba(0,0,0,0.7); padding: 1px 4px; border-radius: 2px;
+  }
+
+  .selection-box {
+    position: fixed;
+    border: 1px dashed var(--accent);
+    background: var(--accent-glow);
+    pointer-events: none;
+    z-index: 200;
+  }
+
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.15s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .modal-content {
+    position: relative; max-width: 95vw; max-height: 95vh;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .modal-content img {
+    max-width: 95vw; max-height: 82vh;
+    object-fit: contain; border-radius: 4px;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.5);
+  }
+  .modal-info {
+    font-family: var(--font-mono);
+    font-size: 12px; color: var(--text-faint);
+    display: flex; gap: 24px;
+  }
+  .modal-close {
+    position: absolute; top: -36px; right: 0;
+    background: none; border: none; color: var(--text-faint);
+    font-size: 24px; cursor: pointer; padding: 4px 8px;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,0.08); border: 1px solid var(--border);
+    color: var(--text); font-size: 20px; cursor: pointer;
+    width: 40px; height: 60px; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .modal-nav:hover { background: rgba(255,255,255,0.15); }
+  .modal-nav.prev { left: -50px; border-radius: 4px 0 0 4px; }
+  .modal-nav.next { right: -50px; border-radius: 0 4px 4px 0; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--surface2); border: 1px solid var(--border-strong);
+    color: var(--text); font-family: var(--font-mono);
+    font-size: 12px; padding: 10px 20px; border-radius: var(--radius);
+    z-index: 300; opacity: 0; transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="landing" class="landing">
+  <div class="landing-card">
+    <div class="landing-brand">[ PhotoFilter ]</div>
+    <h1>Photo Filter</h1>
+    <p class="landing-sub">Curate and dedupe video frame captures — all in your browser.</p>
+
+    <div class="landing-feature-list">
+      <div class="feature-item"><span class="feature-bullet"></span> Browse, filter and group by source video</div>
+      <div class="feature-item"><span class="feature-bullet"></span> Multi-select, drag-to-box, keyboard nav</div>
+      <div class="feature-item"><span class="feature-bullet"></span> Auto-dedup with adjustable similarity threshold</div>
+    </div>
+
+    <button class="btn-choose" id="btnChoose">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+      </svg>
+      <span id="chooseLabel">Choose Photo Folder</span>
+    </button>
+
+    <div id="landingError" class="landing-error hidden"></div>
+
+    <div id="landingHint" class="landing-hint" style="display:none">
+      Backend-configured folder:<br>
+      <code id="configuredFolder"></code>
+    </div>
+  </div>
+</div>
+
+<div id="gallery" class="hidden">
+  <div class="topbar">
+    <span class="brand">[ PhotoFilter ]</span>
+    <span class="folder-name" id="folderName"></span>
+    <span class="stat" id="statTotal"></span>
+    <span class="stat" id="statVisible"></span>
+    <span class="stat" id="statSelected"></span>
+    <span class="spacer"></span>
+
+    <div class="filter-group">
+      <label>Score &ge;</label>
+      <input type="range" id="scoreMin" min="0" max="1" step="0.01" value="0">
+      <span class="val" id="scoreMinVal">0.00</span>
+    </div>
+
+    <div class="filter-group">
+      <label>W&ge;</label>
+      <input type="number" id="resW" min="0" value="0" placeholder="px">
+    </div>
+
+    <div class="filter-group">
+      <label>H&ge;</label>
+      <input type="number" id="resH" min="0" value="0" placeholder="px">
+    </div>
+
+    <div class="filter-group">
+      <label>Size</label>
+      <input type="range" id="thumbSize" min="120" max="400" step="10" value="200">
+    </div>
+
+    <button class="btn" id="btnDedup">Auto Dedup</button>
+    <div class="filter-group">
+      <label>Sim</label>
+      <input type="range" id="dedupThreshold" min="10" max="256" step="5" value="60">
+      <span class="val" id="dedupThresholdVal">60</span>
+    </div>
+
+    <button class="btn" id="btnInvert">Invert</button>
+    <button class="btn danger" id="btnDelete">Delete</button>
+    <button class="btn" id="btnChangeFolder">Change</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal-content">
+    <button class="modal-close" id="modalClose">&times;</button>
+    <button class="modal-nav prev" id="modalPrev">&larr;</button>
+    <img id="modalImg" src="" alt="">
+    <button class="modal-nav next" id="modalNext">&rarr;</button>
+    <div class="modal-info" id="modalInfo"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const FILENAME_RE = /^(?<video>.+?)_ts(?<ts>[\d.]+)s_score(?<score>[\d.]+)\.(jpg|png)$/i;
+
+// Session persistence: survives refresh, cleared on browser close
+const SESSION_FOLDER_FLAG = 'pf.folderLoaded';
+const SESSION_SELECTION = 'pf.selected';
+const SESSION_LASTCLICK = 'pf.lastClick';
+const IDB_NAME = 'photoFilter';
+const IDB_STORE = 'handles';
+
+function openIDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+async function saveHandleToIDB(handle) {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(handle, 'current');
+    tx.oncomplete = resolve;
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+async function loadHandleFromIDB() {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get('current');
+    req.onsuccess = e => resolve(e.target.result || null);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+async function clearIDBHandle() {
+  const db = await openIDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete('current');
+    tx.oncomplete = resolve;
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+function saveSelectionToSession() {
+  sessionStorage.setItem(SESSION_SELECTION, JSON.stringify([...selected]));
+  if (lastClickedKey) sessionStorage.setItem(SESSION_LASTCLICK, lastClickedKey);
+  else sessionStorage.removeItem(SESSION_LASTCLICK);
+}
+function loadSelectionFromSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_SELECTION);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+function loadLastClickFromSession() {
+  return sessionStorage.getItem(SESSION_LASTCLICK) || null;
+}
+
+let dirHandle = null;
+let allImages = [];
+let selected = new Set();
+let lastClickedKey = null;
+let visibleKeys = [];
+let dedupCache = null;
+
+const landing = document.getElementById('landing');
+const gallery = document.getElementById('gallery');
+const btnChoose = document.getElementById('btnChoose');
+const chooseLabel = document.getElementById('chooseLabel');
+const landingError = document.getElementById('landingError');
+const landingHint = document.getElementById('landingHint');
+const configuredFolder = document.getElementById('configuredFolder');
+const grid = document.getElementById('grid');
+const statTotal = document.getElementById('statTotal');
+const statVisible = document.getElementById('statVisible');
+const statSelected = document.getElementById('statSelected');
+const scoreMinEl = document.getElementById('scoreMin');
+const scoreMinVal = document.getElementById('scoreMinVal');
+const resWEl = document.getElementById('resW');
+const resHEl = document.getElementById('resH');
+const thumbSizeEl = document.getElementById('thumbSize');
+const dedupThresholdEl = document.getElementById('dedupThreshold');
+const dedupThresholdVal = document.getElementById('dedupThresholdVal');
+const btnDedup = document.getElementById('btnDedup');
+const btnInvert = document.getElementById('btnInvert');
+const btnDelete = document.getElementById('btnDelete');
+
+let invert = false;
+
+async function initLanding() {
+  try {
+    const r = await fetch('/api/info');
+    const info = await r.json();
+    if (info.configured) {
+      configuredFolder.textContent = `${info.folder} (${info.count} images)`;
+      landingHint.style.display = '';
+    }
+  } catch (e) {}
+
+  if (!('showDirectoryPicker' in window)) {
+    btnChoose.disabled = true;
+    showLandingError('Your browser does not support the File System Access API. Use Chrome or Edge.');
+    return;
+  }
+
+  // Try to restore folder from previous session
+  if (sessionStorage.getItem(SESSION_FOLDER_FLAG)) {
+    try {
+      const handle = await loadHandleFromIDB();
+      if (handle) {
+        let perm = await handle.queryPermission({ mode: 'readwrite' });
+        if (perm !== 'granted') {
+          perm = await handle.requestPermission({ mode: 'readwrite' });
+        }
+        if (perm === 'granted') {
+          dirHandle = handle;
+          await loadFolder({ restoring: true });
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('restore failed', e);
+    }
+    // Restore failed: clear state
+    sessionStorage.removeItem(SESSION_FOLDER_FLAG);
+    try { await clearIDBHandle(); } catch {}
+  }
+}
+
+function showLandingError(msg) {
+  landingError.textContent = msg;
+  landingError.classList.remove('hidden');
+}
+function clearLandingError() {
+  landingError.classList.add('hidden');
+  landingError.textContent = '';
+}
+
+btnChoose.addEventListener('click', async () => {
+  clearLandingError();
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    await loadFolder();
+  } catch (e) {
+    if (e.name !== 'AbortError') showLandingError(e.message);
+  }
+});
+
+async function loadFolder(opts = {}) {
+  chooseLabel.innerHTML = '<span class="spinner"></span>&nbsp;Scanning...';
+  btnChoose.disabled = true;
+
+  try {
+    const entries = [];
+    for await (const entry of dirHandle.values()) {
+      if (entry.kind === 'file' && /\.(jpg|jpeg|png)$/i.test(entry.name)) {
+        entries.push(entry);
+      }
+    }
+    if (entries.length === 0) throw new Error('No JPG/PNG files in this folder.');
+
+    const images = [];
+    for (const entry of entries) {
+      const file = await entry.getFile();
+      const url = URL.createObjectURL(file);
+      const m = FILENAME_RE.exec(entry.name);
+      const score = m ? parseFloat(m.groups.score) : 0;
+      const video = m ? m.groups.video : '';
+      const timestamp = m ? parseFloat(m.groups.timestamp) : 0;
+      const dim = await getImageDimensions(url);
+      images.push({
+        name: entry.name, entry, file, url,
+        score, video, timestamp,
+        width: dim.w, height: dim.h,
+        size_kb: Math.round(file.size / 1024),
+        dhash: null,
+      });
+    }
+
+    allImages = images;
+    visibleKeys = [];
+    selected.clear();
+    lastClickedKey = null;
+    dedupCache = null;
+
+    if (opts.restoring) {
+      // Re-apply saved selection from sessionStorage
+      const savedSel = loadSelectionFromSession();
+      for (const name of savedSel) {
+        if (allImages.find(img => img.name === name)) selected.add(name);
+      }
+      lastClickedKey = loadLastClickFromSession();
+    }
+
+    try {
+      await saveHandleToIDB(dirHandle);
+      sessionStorage.setItem(SESSION_FOLDER_FLAG, '1');
+    } catch (e) { console.warn('persist handle failed', e); }
+
+    showGallery();
+  } catch (e) {
+    showLandingError('Load failed: ' + e.message);
+    chooseLabel.textContent = 'Choose Photo Folder';
+    btnChoose.disabled = false;
+    if (opts.restoring) {
+      sessionStorage.removeItem(SESSION_FOLDER_FLAG);
+      try { await clearIDBHandle(); } catch {}
+    }
+  }
+}
+
+function getImageDimensions(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve({ w: 0, h: 0 });
+    img.src = url;
+  });
+}
+
+function showGallery() {
+  landing.classList.add('hidden');
+  document.getElementById('folderName').textContent = dirHandle.name;
+  renderGallery();
+  statTotal.textContent = `Total: ${allImages.length}`;
+  applyFilter();
+  gallery.classList.remove('hidden');
+}
+
+document.getElementById('btnChangeFolder').addEventListener('click', async () => {
+  allImages.forEach(img => URL.revokeObjectURL(img.url));
+  allImages = [];
+  selected.clear();
+  lastClickedKey = null;
+  sessionStorage.removeItem(SESSION_FOLDER_FLAG);
+  sessionStorage.removeItem(SESSION_SELECTION);
+  sessionStorage.removeItem(SESSION_LASTCLICK);
+  try { await clearIDBHandle(); } catch {}
+  gallery.classList.add('hidden');
+  landing.classList.remove('hidden');
+  chooseLabel.textContent = 'Choose Photo Folder';
+  btnChoose.disabled = false;
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    await loadFolder();
+  } catch (e) {
+    if (e.name !== 'AbortError') showLandingError(e.message);
+  }
+});
+
+function scoreClass(s) {
+  if (s >= 0.7) return 'score-high';
+  if (s >= 0.5) return 'score-mid';
+  return 'score-low';
+}
+
+function getCardOrder() {
+  return [...grid.querySelectorAll('.card:not(.hidden)')].map(c => c.dataset.key);
+}
+
+function renderGallery() {
+  grid.innerHTML = '';
+  const groups = new Map();
+  for (const img of allImages) {
+    const v = img.video || 'unknown';
+    if (!groups.has(v)) groups.set(v, []);
+    groups.get(v).push(img);
+  }
+
+  const sorted = [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  for (const [video, imgs] of sorted) {
+    imgs.sort((a, b) => b.score - a.score);
+
+    const group = document.createElement('div');
+    group.className = 'group';
+
+    const header = document.createElement('div');
+    header.className = 'group-header';
+    header.innerHTML = `
+      <span class="gname" title="${escapeHtml(video)}">${escapeHtml(video)}</span>
+      <span class="gcount">${imgs.length} frames</span>
+      <span class="gline"></span>
+    `;
+    group.appendChild(header);
+
+    const cards = document.createElement('div');
+    cards.className = 'group-cards';
+
+    for (const img of imgs) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.key = img.name;
+      card.dataset.score = img.score;
+      card.dataset.width = img.width;
+      card.dataset.height = img.height;
+
+      card.innerHTML = `
+        <img src="${img.url}" loading="lazy" alt="">
+        <div class="res">${img.width}\u00d7${img.height}</div>
+        <div class="info">
+          <span class="vid" title="${escapeHtml(img.name)}">${img.score?.toFixed(3) ?? '?'}</span>
+          <span class="score ${scoreClass(img.score)}">${img.timestamp?.toFixed(1) ?? '?'}s</span>
+        </div>
+      `;
+      cards.appendChild(card);
+    }
+    group.appendChild(cards);
+    grid.appendChild(group);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[c]);
+}
+
+function applyFilter() {
+  const minScore = parseFloat(scoreMinEl.value);
+  const minW = parseInt(resWEl.value) || 0;
+  const minH = parseInt(resHEl.value) || 0;
+  let visible = 0;
+
+  document.querySelectorAll('.card').forEach(card => {
+    const s = parseFloat(card.dataset.score);
+    const w = parseInt(card.dataset.width);
+    const h = parseInt(card.dataset.height);
+    let match = s >= minScore && w >= minW && h >= minH;
+    if (invert) match = !match;
+    card.classList.toggle('hidden', !match);
+    if (match) visible++;
+  });
+
+  document.querySelectorAll('.group').forEach(group => {
+    const visibleCards = group.querySelectorAll('.card:not(.hidden)').length;
+    group.style.display = visibleCards > 0 ? '' : 'none';
+  });
+
+  visibleKeys = getCardOrder();
+  statVisible.textContent = `Showing: ${visible}`;
+}
+
+scoreMinEl.addEventListener('input', () => {
+  scoreMinVal.textContent = parseFloat(scoreMinEl.value).toFixed(2);
+  applyFilter();
+});
+resWEl.addEventListener('input', applyFilter);
+resHEl.addEventListener('input', applyFilter);
+thumbSizeEl.addEventListener('input', () => {
+  document.documentElement.style.setProperty('--thumb', thumbSizeEl.value + 'px');
+});
+
+btnInvert.addEventListener('click', () => {
+  invert = !invert;
+  btnInvert.classList.toggle('active', invert);
+  applyFilter();
+});
+
+function selectRange(fromKey, toKey) {
+  visibleKeys = getCardOrder();
+  const i1 = visibleKeys.indexOf(fromKey);
+  const i2 = visibleKeys.indexOf(toKey);
+  if (i1 === -1 || i2 === -1) return;
+  const lo = Math.min(i1, i2);
+  const hi = Math.max(i1, i2);
+  if (selected.size === 0) {
+    for (let i = lo; i <= hi; i++) selected.add(visibleKeys[i]);
+  } else {
+    const li = visibleKeys.indexOf(lastClickedKey);
+    const rLo = li === -1 ? lo : Math.min(li, i2);
+    const rHi = li === -1 ? hi : Math.max(li, i2);
+    for (let i = rLo; i <= rHi; i++) selected.add(visibleKeys[i]);
+  }
+  syncCardSelection();
+  updateSelectedUI();
+}
+
+function syncCardSelection() {
+  document.querySelectorAll('.card').forEach(card => {
+    card.classList.toggle('selected', selected.has(card.dataset.key));
+  });
+}
+
+function updateSelectedUI() {
+  statSelected.textContent = `Selected: ${selected.size}`;
+  btnDelete.classList.toggle('visible', selected.size > 0);
+  saveSelectionToSession();
+}
+
+let clickTimer = null;
+
+grid.addEventListener('click', e => {
+  const card = e.target.closest('.card');
+  if (!card) return;
+  if (e.detail > 1) return;
+  const key = card.dataset.key;
+  if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; return; }
+  clickTimer = setTimeout(() => {
+    clickTimer = null;
+    if (e.shiftKey && lastClickedKey) {
+      selectRange(lastClickedKey, key);
+    } else {
+      if (selected.has(key)) selected.delete(key);
+      else selected.add(key);
+      lastClickedKey = key;
+      syncCardSelection();
+      updateSelectedUI();
+    }
+  }, 250);
+});
+
+grid.addEventListener('dblclick', e => {
+  if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
+  const card = e.target.closest('.card');
+  if (!card) return;
+  openPreview(card.dataset.key);
+});
+
+let dragStart = null;
+let dragBox = null;
+let dragWasAdditive = false;
+
+grid.addEventListener('mousedown', e => {
+  if (e.target.closest('.card')) return;
+  if (e.button !== 0) return;
+  dragStart = { x: e.clientX, y: e.clientY };
+  dragWasAdditive = e.shiftKey || e.ctrlKey || e.metaKey;
+  dragBox = document.createElement('div');
+  dragBox.className = 'selection-box';
+  dragBox.style.left = dragStart.x + 'px';
+  dragBox.style.top = dragStart.y + 'px';
+  document.body.appendChild(dragBox);
+});
+
+document.addEventListener('mousemove', e => {
+  if (!dragStart) return;
+  const x1 = Math.min(dragStart.x, e.clientX);
+  const y1 = Math.min(dragStart.y, e.clientY);
+  const x2 = Math.max(dragStart.x, e.clientX);
+  const y2 = Math.max(dragStart.y, e.clientY);
+  dragBox.style.left = x1 + 'px';
+  dragBox.style.top = y1 + 'px';
+  dragBox.style.width = (x2 - x1) + 'px';
+  dragBox.style.height = (y2 - y1) + 'px';
+
+  const r = dragBox.getBoundingClientRect();
+  document.querySelectorAll('.card:not(.hidden)').forEach(card => {
+    const cr = card.getBoundingClientRect();
+    const overlap = !(cr.right < r.left || cr.left > r.right || cr.bottom < r.top || cr.top > r.bottom);
+    const key = card.dataset.key;
+    if (overlap) selected.add(key);
+    else if (!dragWasAdditive) selected.delete(key);
+    card.classList.toggle('selected', selected.has(key));
+  });
+  updateSelectedUI();
+});
+
+document.addEventListener('mouseup', () => {
+  if (!dragStart) return;
+  dragBox?.remove();
+  dragBox = null;
+  dragStart = null;
+});
+
+const modal = document.getElementById('modal');
+const modalImg = document.getElementById('modalImg');
+const modalInfo = document.getElementById('modalInfo');
+const modalClose = document.getElementById('modalClose');
+const modalPrev = document.getElementById('modalPrev');
+const modalNext = document.getElementById('modalNext');
+
+function openPreview(key) {
+  visibleKeys = getCardOrder();
+  const img = allImages.find(i => i.name === key);
+  if (!img) return;
+  modalImg.src = img.url;
+  modalInfo.textContent = `${img.video || key}  |  ${img.width}\u00d7${img.height}  |  score ${img.score?.toFixed(3)}  |  ${img.size_kb} KB`;
+  modal.dataset.currentKey = key;
+  modal.classList.add('open');
+}
+
+function closePreview() {
+  modal.classList.remove('open');
+  modalImg.src = '';
+}
+
+function navPreview(dir) {
+  visibleKeys = getCardOrder();
+  const cur = modal.dataset.currentKey;
+  const idx = visibleKeys.indexOf(cur);
+  if (idx === -1) return;
+  const next = idx + dir;
+  if (next < 0 || next >= visibleKeys.length) return;
+  openPreview(visibleKeys[next]);
+}
+
+modalClose.addEventListener('click', closePreview);
+modal.addEventListener('click', e => { if (e.target === modal) closePreview(); });
+modalPrev.addEventListener('click', e => { e.stopPropagation(); navPreview(-1); });
+modalNext.addEventListener('click', e => { e.stopPropagation(); navPreview(1); });
+
+document.addEventListener('keydown', e => {
+  if (modal.classList.contains('open')) {
+    if (e.key === 'Escape') closePreview();
+    if (e.key === 'ArrowLeft') navPreview(-1);
+    if (e.key === 'ArrowRight') navPreview(1);
+    return;
+  }
+  if (e.key === 'Escape') {
+    selected.clear();
+    lastClickedKey = null;
+    document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'));
+    updateSelectedUI();
+  }
+  if (e.key === 'Delete' && selected.size > 0) {
+    btnDelete.click();
+  }
+});
+
+async function computeDhash(file, size = 16) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size + 1;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, size + 1, size);
+      const data = ctx.getImageData(0, 0, size + 1, size).data;
+      const gray = new Array((size + 1) * size);
+      for (let i = 0; i < gray.length; i++) {
+        const j = i * 4;
+        gray[i] = data[j] * 0.299 + data[j+1] * 0.587 + data[j+2] * 0.114;
+      }
+      let bits = '';
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const left = gray[y * (size + 1) + x];
+          const right = gray[y * (size + 1) + x + 1];
+          bits += left > right ? '1' : '0';
+        }
+      }
+      URL.revokeObjectURL(url);
+      resolve(bits);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('image load failed'));
+    };
+    img.src = url;
+  });
+}
+
+function buildGroupsData() {
+  const groups = {};
+  for (const img of allImages) {
+    if (!img.dhash) continue;
+    const v = img.video || 'unknown';
+    if (!groups[v]) groups[v] = [];
+    groups[v].push({ name: img.name, score: img.score, dhash: img.dhash });
+  }
+  return groups;
+}
+
+function localDedup(threshold) {
+  if (!dedupCache) return [];
+  const duplicates = [];
+  for (const [video, imgs] of Object.entries(dedupCache.groups)) {
+    const sorted = [...imgs].sort((a, b) => b.score - a.score);
+    const keepers = [];
+    for (const img of sorted) {
+      if (!img.dhash) { keepers.push(img); continue; }
+      let isDup = false;
+      for (const k of keepers) {
+        if (!k.dhash) continue;
+        let d = 0;
+        for (let i = 0; i < img.dhash.length; i++) if (img.dhash[i] !== k.dhash[i]) d++;
+        if (d <= threshold) { isDup = true; break; }
+      }
+      if (isDup) duplicates.push(img.name);
+      else keepers.push(img);
+    }
+  }
+  return duplicates;
+}
+
+function applyDedupSelection(paths) {
+  selected.clear();
+  paths.forEach(key => selected.add(key));
+  syncCardSelection();
+  updateSelectedUI();
+  applyFilter();
+}
+
+btnDedup.addEventListener('click', async () => {
+  const threshold = parseInt(dedupThresholdEl.value);
+  btnDedup.textContent = 'Scanning...';
+  btnDedup.disabled = true;
+
+  try {
+    const todo = allImages.filter(img => !img.dhash);
+    if (todo.length > 0) {
+      let done = 0;
+      for (const img of todo) {
+        img.dhash = await computeDhash(img.file);
+        done++;
+        if (done % 20 === 0) showToast(`Hashing: ${done}/${todo.length}`);
+      }
+    }
+    dedupCache = { groups: buildGroupsData(), threshold };
+    const dups = localDedup(threshold);
+    applyDedupSelection(dups);
+    showToast(`Found ${dups.length} near-duplicates. Drag Sim to retune.`);
+  } catch (e) {
+    showToast('Dedup failed: ' + e.message);
+  }
+
+  btnDedup.textContent = 'Auto Dedup';
+  btnDedup.disabled = false;
+});
+
+dedupThresholdEl.addEventListener('input', () => {
+  dedupThresholdVal.textContent = dedupThresholdEl.value;
+  if (!dedupCache) return;
+  const dups = localDedup(parseInt(dedupThresholdEl.value));
+  applyDedupSelection(dups);
+  showToast(`Threshold ${dedupThresholdEl.value}: ${dups.length} duplicates selected`);
+});
+
+btnDelete.addEventListener('click', async () => {
+  if (selected.size === 0) return;
+  const paths = Array.from(selected);
+  const ok = confirm(`Delete ${paths.length} images? This cannot be undone.`);
+  if (!ok) return;
+
+  btnDelete.textContent = 'Deleting...';
+  btnDelete.disabled = true;
+
+  let deleted = 0;
+  for (const name of paths) {
+    const img = allImages.find(i => i.name === name);
+    if (!img) continue;
+    try {
+      await img.entry.remove();
+      URL.revokeObjectURL(img.url);
+      deleted++;
+    } catch (e) {
+      console.error('Failed to delete', name, e);
+    }
+  }
+
+  allImages = allImages.filter(i => !paths.includes(i.name));
+  document.querySelectorAll('.card').forEach(c => {
+    if (paths.includes(c.dataset.key)) c.closest('.group')?.remove();
+  });
+  selected.clear();
+  lastClickedKey = null;
+  updateSelectedUI();
+  applyFilter();
+  statTotal.textContent = `Total: ${allImages.length}`;
+
+  showToast(`Deleted ${deleted} images`);
+  btnDelete.textContent = 'Delete';
+  btnDelete.disabled = false;
+});
+
+const toast = document.getElementById('toast');
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+initLanding();
+</script>
+</body>
+</html>
