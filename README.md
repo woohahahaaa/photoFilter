@@ -4,6 +4,8 @@
 
 Pick a folder, find near-duplicate images, delete them in bulk. Runs entirely in your browser.
 
+> ⚠️ **AI 全栈**：本项目代码由 AI 编写，README 由 AI 生成。
+
 ---
 
 ## 项目结构
@@ -19,11 +21,19 @@ photoFilter/
 
 ## 快速开始
 
-### 方式一：纯本地（推荐）
+### 方式一：让 Agent 帮你跑（推荐）
+
+直接告诉你的 AI Agent（如 OpenCode / Claude / Cursor）：
+
+> "帮我跑 photoFilter，启动 Flask 服务"
+
+Agent 会自动安装依赖、启动后端、打开浏览器。你只需要选择文件夹，剩下的交给它。
+
+### 方式二：纯本地
 
 直接用浏览器打开页面，通过 File System Access API 选择本地文件夹，无需后端。
 
-### 方式二：Flask 后端
+### 方式三：Flask 后端
 
 ```bash
 pip install flask pillow
