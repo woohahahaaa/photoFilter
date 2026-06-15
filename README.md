@@ -1,59 +1,63 @@
-# PhotoFilter
+# 🧪 photoFilter
 
-> 选择一个文件夹，自动识别相似图片，一键批量删除重复帧。
-> 全部在你的浏览器里完成 — 文件不上传、不联网。
+> ⚠️ **这个 README 是 AI 写的，可能有幻觉**。具体行为请以代码为准，描述跟实际对不上的地方欢迎提 issue / 直接改。
+>
+> *This README is AI-generated and may hallucinate. Code is the source of truth — open an issue or fix directly when descriptions diverge from reality.*
 
-Pick a folder, find near-duplicate images, delete them in bulk. **Runs entirely in your browser** — no upload, no server.
+选择一个文件夹，自动识别相似图片，批量删除重复帧。完全在浏览器里跑 — 文件不上传、不联网。
+
+> *Pick a folder, find near-duplicate images, delete them in bulk. Runs entirely in your browser — no upload, no server.*
 
 ---
 
-## ✨ 特性
+## 💡 为什么做这个
 
-- 🖼️ **画廊浏览** — 按源视频分组，按帧分数排序展示
-- 🎯 **多维筛选** — 最低分数 / 最小宽高 / 缩略图大小，实时过滤
-- ☑️ **多种选择** — 单击、Shift 范围选、Ctrl/Cmd 反选、拖拽框选
-- 🔍 **大图预览** — 双击放大、左右键翻页、Esc 关闭
-- 🧬 **dHash 智能去重** — 浏览器内计算 256 位感知哈希，毫秒级比对
-- 🎚️ **阈值实时调参** — 拖动「Sim」滑块即可重新聚类，无需重算哈希
-- 🗑️ **真删除** — 通过 `FileSystemFileHandle.remove()` 真实删除本地文件
-- 💾 **状态记忆** — 选中的文件夹句柄持久化在 IndexedDB，下次打开自动恢复
-- ⌨️ **键盘友好** — 快捷键覆盖选择 / 预览 / 删除全流程
-- 🎨 **暗色主题** — 现代深色 UI，长时间整理不刺眼
+视频抽帧动辄上千张，重复帧占磁盘又难挑；手动翻 = 噩梦。
+
+> *Video frame extraction often produces thousands of frames, many of them near-duplicates. Manual review is a nightmare.*
+
+PhotoFilter 用 dHash 感知哈希 + 可调阈值，在浏览器内本地比对，几次点击就能挑出重复帧、批量删除。整个过程文件不出本机。
+
+> *PhotoFilter uses dHash perceptual hashing with an adjustable threshold to compare frames locally in your browser. A few clicks reveal duplicates and bulk-delete them. Files never leave your machine.*
 
 ---
 
 ## 🚀 快速开始
 
-### 方式 1：纯浏览器（最简单）
-
-需要一个静态文件服务器把 `templates/index.html` 跑起来即可（浏览器不允许 `file://` 直接调用 File System Access API）。
+### 📥 下载到本地
 
 ```bash
-# 任选其一
-python -m http.server 8000
-# 或
-npx serve .
-# 或直接用 Flask（见方式 3）
+git clone https://github.com/woohahahaaa/photoFilter.git
+cd photoFilter
 ```
 
-打开 `http://localhost:8000/templates/index.html`，点 **Choose Photo Folder**，授权一个本地目录。
+> *Clone the repo and enter the directory.*
 
-> **首选浏览器**：Chrome / Edge / 其他基于 Chromium 的浏览器。
-> Safari / Firefox 不支持 File System Access API。
+### 🤖 让 Agent 帮你跑（推荐）
 
-### 方式 2：让 AI Agent 帮你跑
+把项目路径丢给 OpenCode / Claude Code / Cursor，然后对它说：
 
-直接把项目路径丢给 OpenCode / Claude / Cursor：
+> **帮我跑 photoFilter**
 
-> "帮我跑 photoFilter，启动 Flask 服务"
+agent 会自动装依赖、启动 Flask 服务、提示你选目录。
 
-Agent 会自动安装依赖、启动后端、打开浏览器。
+> *Hand the project directory to OpenCode / Claude Code / Cursor and say "Start photoFilter for me". The agent will install deps, start Flask, and prompt you to choose a folder.*
 
-### 方式 3：Flask 后端（可选）
+### 🌍 打开浏览器
+
+服务起来后，浏览器自动打开 `http://127.0.0.1:5000`，点 **Choose Photo Folder** 选一个 jpg 帧目录。
+
+> *Once the server is up, the browser opens `http://127.0.0.1:5000`. Click **Choose Photo Folder** and pick a directory of jpg frames.*
+
+> ⚠️ **仅支持 Chrome / Edge**（依赖 File System Access API），Safari 和 Firefox 不行。
+
+> *Chrome / Edge only — depends on the File System Access API. Safari and Firefox are unsupported.*
+
+### 🛟 兜底：手动启动
 
 ```bash
 pip install flask pillow
-python app.py                 # → http://127.0.0.1:5000
+python app.py
 ```
 
 环境变量指定帧目录：
@@ -62,118 +66,87 @@ python app.py                 # → http://127.0.0.1:5000
 FRAMES_DIR=/path/to/frames python app.py
 ```
 
-> `app.py` 提供 `/api/thumbnail` 服务和 `/api/dedup` 兜底接口。**主流程（选择、浏览、去重、删除）仍然完全在浏览器内完成** —— 后端只是用来在着陆页展示已配置目录的提示，不参与核心计算。
+> *Manual fallback: install Flask and Pillow, then run `app.py`. Override the frames directory with `FRAMES_DIR`.*
 
 ---
 
-## 📐 文件名约定
-
-去重引擎会解析文件名为以下格式，未匹配的会归到 `unknown` 分组：
-
-```
-{video_name}_ts{timestamp}s_score{score}.{jpg|png}
-```
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `video_name` | string | 源视频名（用于分组） |
-| `timestamp` | float | 抽帧时间（秒） |
-| `score` | float | 质量分（0~1，用于排序与去重保留优先级） |
-
-示例：`myvideo_ts12.34s_score0.872.jpg`
-
----
-
-## 🧬 去重原理
-
-使用 **dHash（差值感知哈希）**：
-
-1. 将图片缩放到 **17×16 灰度图**（canvas）
-2. 对每一行的相邻像素比较亮度，生成 16×16 = **256 位**二进制哈希
-3. 同一视频分组内，按 score 降序遍历
-4. 当前图与任一已保留图的 **汉明距离 ≤ 阈值** → 标记为重复
-5. 阈值越小越严格（10 ≈ 几乎相同；60 = 默认；256 ≈ 全部相似）
-
-**实现位置**：完全在浏览器内（`computeDhash` / `localDedup`），无需服务端计算。
-
----
-
-## ⌨️ 快捷键
-
-| 按键 | 行为 |
-|------|------|
-| `Esc` | 关闭预览 / 清除选择 |
-| `←` / `→` | 预览中切换上一张 / 下一张 |
-| `Delete` | 删除当前选中（等同点 Delete 按钮） |
-| `Click` | 单选 |
-| `Shift + Click` | 范围选（从上次点击处到当前） |
-| `Ctrl/Cmd + Click` | 反选单个 |
-| 拖拽空白处 | 框选（按住 `Shift` / `Ctrl` 叠加反选） |
-
----
-
-## 🗂️ 项目结构
+## 📁 项目结构
 
 ```
 photoFilter/
-├── app.py                       # Flask 后端（可选）
+├── app.py                       # Flask 后端：缩略图 + API 兜底
 ├── templates/
-│   └── index.html               # 前端 SPA（HTML + CSS + JS，单文件）
+│   └── index.html               # 前端 SPA，单文件零依赖
 ├── .gitignore
 └── README.md
 ```
 
-整个前端是一个 **零依赖单文件**（`index.html`），没有构建步骤，没有 node_modules。
+> *Flask backend plus a single-file HTML/CSS/JS frontend with zero build deps.*
 
 ---
 
-## 🔌 Flask API 一览
+## ✨ 功能一览
 
-后端只是辅助接口，前端主流程不会阻塞依赖它们。
+| 功能 | 操作 |
+|------|------|
+| 打开文件夹 | 点 **Choose Photo Folder**（Chrome / Edge） |
+| 浏览画廊 | 按源视频分组，按 score 排序 |
+| 筛选 | 最低分数 / 最小宽高 / 缩略图大小 |
+| 多选 | 单击 / Shift 范围选 / Ctrl 反选 / 拖拽框选 |
+| 预览 | 双击大图，← → 翻页，Esc 关闭 |
+| 自动去重 | 一键 dHash 检测，Sim 滑块实时调阈值 |
+| 删除 | 选中后 `confirm()` 二次确认，**真实删除**本地文件（不可恢复） |
 
-| Method | Path | 说明 |
-|--------|------|------|
-| `GET` | `/` | 渲染 `index.html` |
-| `GET` | `/api/info` | 返回已配置的 `FRAMES_DIR` 与图片数 |
-| `GET` | `/api/images` | 列出目录内所有 `.jpg` 的元信息 |
-| `GET` | `/api/thumbnail/<path>` | 生成 320×180 JPEG 缩略图 |
-| `GET` | `/api/image/<path>` | 返回原图 |
-| `POST` | `/api/dedup` | 兜底的服务器端去重接口（前端一般用本地版） |
+> *Click **Choose Photo Folder** (Chrome/Edge); browse grouped by source video, sorted by score; filter by min score / min resolution / thumbnail size; multi-select via click / Shift+click / Ctrl+click / drag-box; preview with double-click and arrow keys; one-click dHash dedup with live threshold retuning; deletes local files after `confirm()` — **deletion is real and irreversible**.*
 
-所有 `<path>` 都做了 `FRAMES_DIR` 路径前缀校验，防止越权访问。
+---
+
+## 🧠 核心原理
+
+去重引擎走 **dHash（差值感知哈希）**：
+
+> *The dedup engine uses **dHash (difference hash)**.*
+
+1. 把图片缩放到 17×16 灰度图。
+   > *Resize the image to a 17×16 grayscale canvas.*
+2. 同一行内对相邻像素比较亮度，生成 16×16 = **256 位**二进制哈希。
+   > *Compare horizontally adjacent pixels per row to produce a 16×16 = **256-bit** binary hash.*
+3. 同视频分组内按 score 降序遍历，当前哈希与已保留哈希的**汉明距离 ≤ 阈值**则判定重复。
+   > *Within each video group, walk frames in descending score order. If the Hamming distance to any kept hash is ≤ threshold, mark as duplicate.*
+4. 阈值越小越严格（10 ≈ 几乎相同；60 = 默认；256 ≈ 全部相似）。
+   > *Lower threshold = stricter matching (10 ≈ near-identical; 60 = default; 256 ≈ all similar).*
+
+### 文件名约定
+
+去重按以下格式解析帧文件名，未匹配的归到 `unknown` 分组：
+
+> *Frames are parsed by the following filename pattern; unmatched frames fall into `unknown`.*
+
+```
+{video}_ts{timestamp}s_score{score}.{jpg|png}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `video` | string | 源视频名（用于分组） |
+| `timestamp` | float | 抽帧时间（秒） |
+| `score` | float | 质量分（0~1） |
 
 ---
 
 ## 📦 依赖
 
-| 组件 | 依赖 |
-|------|------|
-| 前端（核心） | **无** —— 纯浏览器 API |
-| `app.py`（可选） | `flask`, `pillow` |
+| 组件 | 需要的包 |
+|------|----------|
+| 前端（核心） | 无，纯浏览器 API |
+| `app.py`（可选 Flask 后端） | `flask`, `pillow` |
+
+> *Frontend: zero deps, pure browser API. Flask backend: `flask`, `pillow`.*
 
 ---
 
-## ⚠️ 删除是真实的，不可恢复
+## 📜 License
 
-> 选择 → 删除会直接调用 `FileSystemFileHandle.remove()`，**文件进入系统回收站/永久删除**。
->
-> 建议先去重 + 预览选中结果，确认无误再点 Delete。
-> 当前版本删除前会有 `confirm()` 二次确认，但仍请谨慎操作。
+未声明 License，仅供学习与个人使用。
 
----
-
-## 🧪 兼容性
-
-| 浏览器 | File System Access | 状态 |
-|--------|--------------------|------|
-| Chrome 86+ | ✅ | 推荐 |
-| Edge 86+ | ✅ | 推荐 |
-| Opera 72+ | ✅ | 可用 |
-| Safari | ❌ | 不支持 |
-| Firefox | ❌ | 不支持 |
-
----
-
-## 📝 备注
-
-本项目代码与 README 均为 AI 生成，仅供学习与个人使用。删图前请自行备份。
+> *No license declared; for learning and personal use only.*
